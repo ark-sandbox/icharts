@@ -16,13 +16,12 @@ type DataPoint struct {
 }
 
 type LineChart struct {
+	Chart
+	LineChartState
+
 	Data        []DataPoint
-	GtkCanvas   *gtk.DrawingArea
 	MaxPoints   int
-	MinWidth    int
-	MinHeight   int
 	PointRadius float64
-	state       LineChartState
 }
 
 type LineChartState struct {
@@ -35,14 +34,12 @@ func LineChartNew() *LineChart {
 	chart := LineChart{}
 	chart.GtkCanvas, _ = gtk.DrawingAreaNew()
 
-	chart.MinWidth = 200
-	chart.MinHeight = 150
+	chart.Init()
 	chart.PointRadius = 3.0
 	chart.MaxPoints = 10
-	chart.state.cursorNearPoint = -1
+	chart.cursorNearPoint = -1
 
 	//Call Draw method by connecting to draw event.
-	chart.GtkCanvas.SetSizeRequest(chart.MinWidth, chart.MinHeight)
 	chart.GtkCanvas.Connect("draw", chart.Draw)
 	chart.GtkCanvas.Connect("motion-notify-event", chart.MotionNotify)
 	chart.GtkCanvas.SetEvents(
@@ -69,14 +66,14 @@ func (chart *LineChart) Draw(da *gtk.DrawingArea, cr *cairo.Context) {
 
 	cr.SetSourceRGB(0.0, 0.0, 0.0)
 
-	chart.state.dataPoints = nil
+	chart.dataPoints = nil
 	for i, data := range plotData {
 		cr.LineTo(float64(i*colWidth), data.Val*float64(aheight))
-		chart.state.dataPoints = append(chart.state.dataPoints,
+		chart.dataPoints = append(chart.dataPoints,
 			Point{float64(i * colWidth), data.Val * float64(aheight)})
 	}
 	cr.Stroke()
-	log.Print("datapoints : %+v", chart.state.dataPoints)
+	log.Print("datapoints : %+v", chart.dataPoints)
 
 	for i, data := range plotData {
 		cr.SetSourceRGB(1.0, 1.0, 1.0)
@@ -92,9 +89,9 @@ func (chart *LineChart) Draw(da *gtk.DrawingArea, cr *cairo.Context) {
 	cr.SetFontSize(12.0)
 
 	//Highlight point near cursor and its value.
-	idx := chart.state.cursorNearPoint
+	idx := chart.cursorNearPoint
 	if idx != -1 {
-		point := chart.state.dataPoints[idx]
+		point := chart.dataPoints[idx]
 		cr.SetSourceRGB(0.0, 0.0, 0.4)
 		cr.Arc(point.X, point.Y,
 			chart.PointRadius+2.0, 0.0, 2*math.Pi)
@@ -121,16 +118,16 @@ func (chart *LineChart) MotionNotify(da *gtk.DrawingArea, ev *gdk.Event) {
 	x, y := motionEvt.MotionVal()
 	log.Printf("MotionNotify is called...%+v, %+v, %+v\n",
 		x, y, motionEvt.Type())
-	chart.state.cursorPos = Point{x, y}
+	chart.cursorPos = Point{x, y}
 
 	//Highlight point near cursor and its value.
-	chart.state.cursorNearPoint = -1
-	for i, point := range chart.state.dataPoints {
-		if Dist(point, chart.state.cursorPos) < 15.0 {
-			chart.state.cursorNearPoint = i
+	chart.cursorNearPoint = -1
+	for i, point := range chart.dataPoints {
+		if Dist(point, chart.cursorPos) < 15.0 {
+			chart.cursorNearPoint = i
 			chart.GtkCanvas.QueueDraw()
 			log.Println("updated cursorNearPoint to ",
-				chart.state.cursorNearPoint)
+				chart.cursorNearPoint)
 		}
 	}
 }
