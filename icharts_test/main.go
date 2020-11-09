@@ -35,8 +35,20 @@ func main() {
 
 	linechart2.GtkCanvas.SetHExpand(true)
 	linechart2.GtkCanvas.SetVExpand(true)
+
+	piechart := PieChartNew()
+	sections := []PieSection{
+		PieSectionNew(50.0, "Apples"),
+		PieSectionNew(60.0, "Oranges"),
+		PieSectionNew(300.0, "Potatoes"),
+	}
+	piechart.Sections = sections
+	piechart.GtkCanvas.SetHExpand(true)
+	piechart.GtkCanvas.SetVExpand(true)
+
 	grid.Add(linechart2.GtkCanvas)
 	grid.Add(linechart1.GtkCanvas)
+	grid.Add(piechart.GtkCanvas)
 
 	topLabel, err := gtk.LabelNew("Grid End")
 	if err != nil {
